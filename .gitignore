@@ -125,3 +125,4 @@ $RECYCLE.BIN/
 *.lnk
 
 .vscode/
+.plastic/
