@@ -5,7 +5,7 @@ using UnityEngine.Networking;
 using UnityEngine.UI;
 using TMPro;
 using SimpleJSON;
-using System.Linq; // ✅ Add this line for Where(), Select(), etc.
+using System.Linq;
 
 public class SpeechProcessor : MonoBehaviour
 {
@@ -56,19 +56,45 @@ public class SpeechProcessor : MonoBehaviour
                         string phonemeTag = tag.Value;
                         if (phonemeTag.StartsWith("pron:"))
                         {
-                           string rawPhonemes = phonemeTag.Substring(5).Trim(); // remove extra spaces
+                            string rawPhonemes = phonemeTag.Substring(5).Trim();
                             string[] parts = rawPhonemes.Split(' ').Where(p => !string.IsNullOrWhiteSpace(p)).ToArray();
-                            string phonemes = string.Join(" - ", parts);
-                            outputTextField.text = phonemes;
+                            string phonemeString = string.Join(" - ", parts);
                             outputTextField.gameObject.SetActive(true);
+
+                            StartCoroutine(AnimatePhonemes(parts, 1.4f)); // Highlight each phoneme for 1.4 sec
                             yield break;
                         }
                     }
-
-           }
+                }
 
                 outputTextField.text = "Phonemes not found.";
             }
         }
     }
+
+    IEnumerator AnimatePhonemes(string[] phonemes, float interval)
+    {
+        for (int i = 0; i < phonemes.Length; i++)
+        {
+            string display = "";
+
+            for (int j = 0; j < phonemes.Length; j++)
+            {
+                if (i == j)
+                    display += $"<color=red>{phonemes[j]}</color>";
+                else
+                    display += $"<color=grey>{phonemes[j]}</color>";
+
+                if (j < phonemes.Length - 1)
+                    display += " - ";
+            }
+
+            outputTextField.text = display;
+            yield return new WaitForSeconds(interval);
+        }
+
+        // Optional: show final string in white
+        outputTextField.text = string.Join(" - ", phonemes);
+    }
 }
+
