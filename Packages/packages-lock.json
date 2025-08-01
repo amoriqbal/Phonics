@@ -7,6 +7,13 @@
       "dependencies": {},
       "hash": "6e75479b8c376cd1492e138f862de5eae0ce09bb"
     },
+    "com.monitor1394.xcharts": {
+      "version": "https://github.com/XCharts-Team/XCharts.git",
+      "depth": 0,
+      "source": "git",
+      "dependencies": {},
+      "hash": "efbe16b8048d691d6e077bcc1f1a6d9b82546554"
+    },
     "com.monitor1394.xcharts.daemon": {
       "version": "https://github.com/XCharts-Team/XCharts-Daemon.git",
       "depth": 0,
