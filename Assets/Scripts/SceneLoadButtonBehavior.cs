@@ -70,6 +70,31 @@ public class SceneLoadButtonBehavior : MonoBehaviour
     {
         settingsPanel.SetActive(!settingsPanel.activeSelf);
     }
+    public void mIncrementQuestions()
+    {
+        textFieldSettingNumQuestions.text = $"{DDOL.Instance.mSettingsNumQuestions + 1}";
+    }
+
+    public void mDecrementQuestions()
+    {
+        if (DDOL.Instance.mSettingsNumQuestions > 1)
+        {
+            textFieldSettingNumQuestions.text = $"{DDOL.Instance.mSettingsNumQuestions - 1}";
+        }
+    }
+    public void mIncrementDelay()
+    {
+        textFieldSettingDelay.text = $"{DDOL.Instance.mSettingsDelay + 1}";
+    }
+
+    public void mDecrementDelay()
+    {
+        if (DDOL.Instance.mSettingsDelay > 1)
+        {
+            textFieldSettingDelay.text = $"{DDOL.Instance.mSettingsDelay - 1}";
+        }
+    }
+
     public void Start()
     {
         mOnDifficultyChanged();

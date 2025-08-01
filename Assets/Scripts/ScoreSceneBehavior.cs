@@ -10,12 +10,13 @@ public class ScoreSceneBehavior : MonoBehaviour
     {
         int score = DDOL.Instance.mScore;
         int questions = DDOL.Instance.mQuestions;
-        GetComponent<TextMeshProUGUI>().text = 
+        GetComponent<TextMeshProUGUI>().text =
             $"Score : {score} / {questions}\n" +
             $"Percentage : {((float)score / questions) * 100}%";
-        string recordPath = Application.dataPath + "/practiceRecord.txt";
-        StreamWriter sw = File.AppendText(recordPath);
-        sw.WriteLine($"{questions},{score},{DateTime.Now.ToString()}\n");
-        sw.Close();
+    }
+
+    public void LoadMainMenu()
+    {
+        UnityEngine.SceneManagement.SceneManager.LoadScene("LandingScene");
     }
 }

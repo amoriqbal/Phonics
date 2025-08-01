@@ -17,6 +17,12 @@ EditorBuildSettings:
   - enabled: 1
     path: Assets/Scenes/ScoreScene.unity
     guid: 2e2bbede9d2da894fabe3fceb9695a6c
+  - enabled: 1
+    path: Assets/Scenes/DashboardScene.unity
+    guid: f394671b264532d40a71eb42b65075b7
+  - enabled: 1
+    path: Assets/Scenes/Mouth_Animation.unity
+    guid: 3e16b83dae912b241bdfcb177ffaa95b
   m_configObjects:
     com.unity.input.settings.actions: {fileID: -944628639613478452, guid: 052faaac586de48259a63d0c4782560b, type: 3}
   m_UseUCBPForAssetBundles: 0

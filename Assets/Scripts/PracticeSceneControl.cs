@@ -12,11 +12,14 @@ using Newtonsoft.Json.Linq;
 using UnityEngine.UI;
 using JetBrains.Annotations;
 using UnityEngine.SceneManagement;
+using System.Data.Common;
+using SQLite;
+using System.Linq;
 
 public class PracticeSceneControl : MonoBehaviour
 {
     [SerializeField]
-    public string[] mWordBank;
+    public TextAsset[] mDatasetPaths;
     [SerializeField]
     public int mMaxQuestions = 10;
     [SerializeField]
@@ -31,7 +34,9 @@ public class PracticeSceneControl : MonoBehaviour
     public TextMeshProUGUI scoreText;
     [SerializeField]
     public TextMeshProUGUI questionNumberText;
-
+    private int mDifficulty;
+    private string[] mWordBank;
+    private SQLiteConnection mConnection;
     private AudioClip mAudioClip;
     private bool recording = false;
     private byte[] bytes;
@@ -93,6 +98,7 @@ public class PracticeSceneControl : MonoBehaviour
     private async void SendRecording()
     {
         string text = await SpeechToText.decodeFile(Application.dataPath + "/test.wav");
+        text = text.ToLower().Trim();
         if (text == string.Empty)
         {
             Debug.Log("ERROR: Speech to Text failed");
@@ -101,7 +107,7 @@ public class PracticeSceneControl : MonoBehaviour
         {
             resultText.text = text;
             await Task.Delay(mDelayBetweenQuestions * 1000);
-            if (resultText.text == exerciseText.text)
+            if (resultText.text == exerciseText.text.ToLower().Trim() || resultText.text == exerciseText.text.ToLower().Trim()+".")
             {
                 GetComponent<Animator>().SetTrigger("right");
                 Score++;
@@ -120,6 +126,14 @@ public class PracticeSceneControl : MonoBehaviour
             DDOL.Instance.mQuestions = QuestionNumber;
             DDOL.Instance.mScore = Score;
             SceneManager.LoadScene("Assets/Scenes/ScoreScene.unity");
+            mConnection.CreateTable<Record>();
+            mConnection.Insert(new Record
+            {
+                Score = Score,
+                DateTime = DateTime.Now,
+                NumQuestions = QuestionNumber,
+                Difficulty = DDOL.Instance.mSettingsDifficulty
+            });
         }
     }
     public void mOnVoiceInputButtonRelease()
@@ -149,18 +163,58 @@ public class PracticeSceneControl : MonoBehaviour
     {
         Score = 0;
         QuestionNumber = 0;
+        mMaxQuestions = DDOL.Instance.mSettingsNumQuestions;
+        mDelayBetweenQuestions = DDOL.Instance.mSettingsDelay;
+        mDifficulty = DDOL.Instance.mSettingsDifficulty;
+        mPrepareSampleDataset();
+        mConnection = new SQLiteConnection($"{Application.persistentDataPath}/PracticeRecords.db");
         NextQuestion();
+    }
+
+    private void mPrepareSampleDataset()
+    {
+        TextAsset sampleFile = mDatasetPaths[mDifficulty];
+        if (sampleFile)
+        {
+            string[] lines = sampleFile.text.Split(new[] { '\n', '\r' }, StringSplitOptions.RemoveEmptyEntries)
+                .Select(line => line.Trim())
+                .Where(line => !string.IsNullOrEmpty(line))
+                .ToArray();
+            mWordBank = lines.OrderBy(x => UnityEngine.Random.value).Take(mMaxQuestions).ToArray();
+        }
+        else
+        {
+            Debug.LogError($"Sample dataset file not found: {sampleFile.name}");
+            mWordBank = new string[0];
+        }
+    }
+    private void OnDestroy()
+    {
+        mConnection.Close();
     }
 
     private void NextQuestion()
     {
         QuestionNumber++;
-        questionNumberText.text = $"Question {QuestionNumber}";
+        questionNumberText.text = $"Question {QuestionNumber} / {mMaxQuestions}";
         resultText.text = "";
         if (mWordBank.Length > 0 && exerciseText != null)
         {
-            int randomIndex = UnityEngine.Random.Range(0, mWordBank.Length);
-            exerciseText.text = mWordBank[randomIndex];
+            exerciseText.text = mWordBank[QuestionNumber - 1];
+        }
+    }
+
+    public class Record
+    {
+        [PrimaryKey, AutoIncrement]
+        public int Id { get; set; }
+        public int NumQuestions { get; set; }
+        public int Score { get; set; }
+        public int Difficulty { get; set; }
+        public DateTime DateTime { get; set; }
+        public override string ToString() 
+        {
+            return $"Record: {Id}, Score: {Score}, Questions: {NumQuestions}, Difficulty: {Difficulty}, DateTime: {DateTime}";
         }
     }
     class SpeechToText
