@@ -105,30 +105,127 @@ public class PhonemeZoneHighlighter : MonoBehaviour
         return null;
     }
 
-    void InitPhonemeZones()
-    {
-        phonemeZones["B"] = new() { { "lips", 1f }, { "vocal_chords", 0.9f } };
-        phonemeZones["AE"] = new() { { "tongue", 0.8f }, { "lips", 0.5f } };
-        phonemeZones["T"] = new() { { "upper_teeth", 0.9f }, { "tongue", 0.7f } };
-        phonemeZones["K"] = new() { { "tongue", 0.9f }, { "vocal_chords", 0.6f } };
-        phonemeZones["D"] = new() { { "tongue", 0.8f }, { "vocal_chords", 0.7f } };
-        phonemeZones["AO"] = new() { { "lips", 0.7f }, { "tongue", 0.6f } };
-        phonemeZones["F"] = new() { { "upper_teeth", 0.9f }, { "lips", 0.5f } };
-        phonemeZones["IH"] = new() { { "tongue", 0.9f } };
-        phonemeZones["SH"] = new() { { "tongue", 0.8f }, { "lips", 0.6f } };
-        phonemeZones["M"] = new() { { "lips", 1f }, { "nasal", 0.9f } };
-        phonemeZones["N"] = new() { { "nasal", 1f }, { "tongue", 0.6f } };
-        phonemeZones["OW"] = new() { { "lips", 0.7f }, { "tongue", 0.5f } };
-        phonemeZones["S"] = new() { { "tongue", 0.8f }, { "lips", 0.6f } };
-        phonemeZones["AH"] = new() { { "vocal_chords", 0.9f }, { "tongue", 0.6f } };
-        phonemeZones["AA"] = new() { { "vocal_chords", 0.8f }, { "tongue", 0.6f } };
-        phonemeZones["Z"] = new() { { "tongue", 0.8f }, { "lips", 0.6f } };
-        phonemeZones["IY"] = new() { { "tongue", 0.9f }, { "lips", 0.6f } };
-        phonemeZones["P"] = new() { { "lips", 1f }, { "vocal_chords", 0.5f } };
-        phonemeZones["L"] = new() { { "tongue", 0.8f } };
-        phonemeZones["R"] = new() { { "tongue", 0.7f }, { "vocal_chords", 0.7f } };
-        // Add more as needed
-    }
+void InitPhonemeZones()
+
+{
+
+    // Plosives
+
+    phonemeZones["P"] = new() { { "lips", 1f } };
+
+    phonemeZones["B"] = new() { { "lips", 1f }, { "vocal_chords", 0.9f } };
+
+    phonemeZones["T"] = new() { { "tongue", 0.8f }, { "upper_teeth", 0.7f } };
+
+    phonemeZones["D"] = new() { { "tongue", 0.8f }, { "vocal_chords", 0.7f }, { "upper_teeth", 0.6f } };
+
+    phonemeZones["K"] = new() { { "tongue", 0.9f } };
+
+    phonemeZones["G"] = new() { { "tongue", 0.9f }, { "vocal_chords", 0.7f } };
+
+
+
+    // Nasals
+
+    phonemeZones["M"] = new() { { "lips", 1f }, { "nasal", 1f }, { "vocal_chords", 1f } };
+
+    phonemeZones["N"] = new() { { "tongue", 0.6f }, { "nasal", 1f }, { "vocal_chords", 1f } };
+
+    phonemeZones["NG"] = new() { { "tongue", 0.9f }, { "nasal", 1f }, { "vocal_chords", 1f } };
+
+
+
+    // Fricatives
+
+    phonemeZones["F"] = new() { { "lips", 0.8f }, { "upper_teeth", 1f } };
+
+    phonemeZones["V"] = new() { { "lips", 0.8f }, { "upper_teeth", 1f }, { "vocal_chords", 1f } };
+
+    phonemeZones["TH"] = new() { { "tongue", 1f }, { "upper_teeth", 1f }, { "lower_teeth", 1f } };
+
+    phonemeZones["DH"] = new() { { "tongue", 1f }, { "upper_teeth", 0.8f }, { "lower_teeth", 0.8f }, { "vocal_chords", 1f } };
+
+    phonemeZones["S"] = new() { { "tongue", 0.8f }, { "upper_teeth", 1f } };
+
+    phonemeZones["Z"] = new() { { "tongue", 0.8f }, { "upper_teeth", 1f }, { "vocal_chords", 1f } };
+
+    phonemeZones["SH"] = new() { { "tongue", 0.9f }, { "upper_teeth", 0.8f } };
+
+    phonemeZones["ZH"] = new() { { "tongue", 0.9f }, { "upper_teeth", 0.8f }, { "vocal_chords", 1f } };
+
+    phonemeZones["HH"] = new() { { "vocal_chords", 0.4f } }; // breathy glottal fricative
+
+
+
+    // Affricates
+
+    phonemeZones["CH"] = new() { { "tongue", 1f }, { "upper_teeth", 0.8f } };
+
+    phonemeZones["JH"] = new() { { "tongue", 1f }, { "upper_teeth", 0.8f }, { "vocal_chords", 1f } };
+
+
+
+    // Approximants and liquids
+
+    phonemeZones["L"] = new() { { "tongue", 0.9f }, { "vocal_chords", 1f } };
+
+    phonemeZones["R"] = new() { { "tongue", 0.8f }, { "vocal_chords", 1f } };
+
+    phonemeZones["W"] = new() { { "lips", 0.8f }, { "tongue", 0.6f }, { "vocal_chords", 1f } };
+
+    phonemeZones["Y"] = new() { { "tongue", 0.9f }, { "vocal_chords", 1f } };
+
+
+
+    // Vowels
+
+
+    phonemeZones["IY"] = new() { { "tongue", 0.9f }, { "vocal_chords", 1f } };
+
+    phonemeZones["IH"] = new() { { "tongue", 0.8f }, { "vocal_chords", 1f } };
+
+    phonemeZones["EY"] = new() { { "tongue", 0.8f }, { "vocal_chords", 1f } };
+
+    phonemeZones["EH"] = new() { { "tongue", 0.7f }, { "vocal_chords", 1f } };
+
+    phonemeZones["AE"] = new() { { "tongue", 0.8f }, { "vocal_chords", 1f } };
+
+    phonemeZones["AA"] = new() { { "tongue", 0.7f }, { "vocal_chords", 1f } };
+
+    phonemeZones["AH"] = new() { { "tongue", 0.6f }, { "vocal_chords", 1f } };
+
+    phonemeZones["AO"] = new() { { "tongue", 0.7f }, { "vocal_chords", 1f }, { "lips", 0.5f } };
+
+    phonemeZones["OW"] = new() { { "tongue", 0.7f }, { "vocal_chords", 1f }, { "lips", 0.4f } };
+
+    phonemeZones["UH"] = new() { { "tongue", 0.8f }, { "vocal_chords", 0.7f } };
+
+    phonemeZones["UW"] = new() { { "tongue", 0.9f }, { "vocal_chords", 1f }, { "lips", 0.6f } };
+
+    phonemeZones["AY"] = new() { { "tongue", 0.8f }, { "vocal_chords", 1f } };
+
+    phonemeZones["AW"] = new() { { "tongue", 0.8f }, { "vocal_chords", 1f } };
+
+    phonemeZones["OY"] = new() { { "tongue", 0.7f }, { "vocal_chords", 1f }, { "lips", 0.3f } };
+
+
+
+    // Special cases / reduced vowels
+
+    phonemeZones["AX"] = new() { { "tongue", 0.6f }, { "vocal_chords", 0.8f } };
+
+    phonemeZones["AXR"] = new() { { "tongue", 0.6f }, { "vocal_chords", 0.8f }, { "r", 0.5f } };
+
+    phonemeZones["IX"] = new() { { "tongue", 0.7f }, { "vocal_chords", 1f } };
+
+    phonemeZones["UX"] = new() { { "tongue", 0.7f }, { "vocal_chords", 0.9f } };
+
+    phonemeZones["ER"] = new() { { "tongue", 0.7f }, { "vocal_chords", 1f } };
+
+
+
+}
+
 
     IEnumerator AnimatePhonemes(string[] phonemes)
     {
