@@ -217,7 +217,7 @@ public class PracticeSceneControl : MonoBehaviour
             return $"Record: {Id}, Score: {Score}, Questions: {NumQuestions}, Difficulty: {Difficulty}, DateTime: {DateTime}";
         }
     }
-    class SpeechToText
+    public class SpeechToText
     {
         static readonly string BaseUrl = "https://api.assemblyai.com";
         static readonly string ApiKey = "0dbf57727ac345c2a4df5f2d594337f8";
