@@ -19,13 +19,32 @@ public class SceneLoadButtonBehavior : MonoBehaviour
         if(practiceScenePath != null)
             SceneManager.LoadScene(practiceScenePath);
     }
+    public void PlaygroundScene()
+    {
+        SceneManager.LoadScene("Circular Waveform");
+    }
 
+    public void LearnScene()
+    {
+               SceneManager.LoadScene("Mouth_Animation");
+    }
+
+    public void SyllablesScene()
+    {
+        SceneManager.LoadScene("WaveformA");
+    }
     public void mOnClickDashboardButton()
     {
         if(practiceScenePath != null)
             SceneManager.LoadScene(dashboardScenePath);
     }
-
+    public void QuitButton()
+    {
+               Application.Quit();
+#if UNITY_EDITOR   
+        UnityEditor.EditorApplication.isPlaying = false;
+#endif
+    }
     public void mOnNumQuestionsFieldChanged()
     {
         string xNumQuestionsStr = textFieldSettingNumQuestions.text;

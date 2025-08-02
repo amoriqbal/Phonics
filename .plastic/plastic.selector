@@ -1,4 +1,0 @@
-repository "Phonics@amoriqbalmail@cloud"
-  path "/"
-    br "/main"
-    co "/main"

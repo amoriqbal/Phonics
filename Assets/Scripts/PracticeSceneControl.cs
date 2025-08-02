@@ -66,6 +66,12 @@ public class PracticeSceneControl : MonoBehaviour
         resultText.text = $"Recording started";
     }
 
+    public void onQuitButton()
+    {
+        DDOL.Instance.mQuestions = DDOL.Instance.mSettingsNumQuestions;
+        DDOL.Instance.mScore = Score;
+        SceneManager.LoadScene("ScoreScene");
+    }
     private byte[] EncodeAsWAV(float[] samples, int frequency, int channels)
     {
         using (MemoryStream memoryStream = new MemoryStream(44 + samples.Length * 2))

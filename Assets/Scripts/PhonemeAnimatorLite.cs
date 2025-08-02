@@ -5,6 +5,7 @@ using UnityEngine.UI;
 using TMPro;
 using UnityEngine.Networking;
 using System.Linq;
+using UnityEngine.SceneManagement;
 
 public class PhonemeZoneHighlighter : MonoBehaviour
 {
@@ -225,7 +226,10 @@ void InitPhonemeZones()
 
 
 }
-
+    public void MainMenuButton()
+    {
+        SceneManager.LoadScene("LandingScene");
+    }
 
     IEnumerator AnimatePhonemes(string[] phonemes)
     {

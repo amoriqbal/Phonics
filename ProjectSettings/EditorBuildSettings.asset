@@ -5,9 +5,6 @@ EditorBuildSettings:
   m_ObjectHideFlags: 0
   serializedVersion: 2
   m_Scenes:
-  - enabled: 0
-    path: Assets/Scenes/SampleScene.unity
-    guid: 99c9720ab356a0642a771bea13969a05
   - enabled: 1
     path: Assets/Scenes/LandingScene.unity
     guid: 27873c188e37c674fb04797ad5424137
@@ -23,6 +20,12 @@ EditorBuildSettings:
   - enabled: 1
     path: Assets/Scenes/Mouth_Animation.unity
     guid: 3e16b83dae912b241bdfcb177ffaa95b
+  - enabled: 1
+    path: Assets/Scenes/WaveformA.unity
+    guid: dc801f04009729249975f2406f781f76
+  - enabled: 1
+    path: Assets/Scenes/Circular Waveform.unity
+    guid: 52a6674ee1f917d459fb86641beacc19
   m_configObjects:
     com.unity.input.settings.actions: {fileID: -944628639613478452, guid: 052faaac586de48259a63d0c4782560b, type: 3}
   m_UseUCBPForAssetBundles: 0
