@@ -19,7 +19,20 @@ public class SceneLoadButtonBehavior : MonoBehaviour
         if(practiceScenePath != null)
             SceneManager.LoadScene(practiceScenePath);
     }
+    public void PlaygroundScene()
+    {
+        SceneManager.LoadScene("Circular Waveform");
+    }
 
+    public void LearnScene()
+    {
+               SceneManager.LoadScene("Mouth_Animation");
+    }
+
+    public void SyllablesScene()
+    {
+        SceneManager.LoadScene("WaveformA");
+    }
     public void mOnClickDashboardButton()
     {
         if(practiceScenePath != null)
