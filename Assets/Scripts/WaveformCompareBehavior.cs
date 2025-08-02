@@ -5,23 +5,57 @@ using UnityEngine;
 using XCharts.Runtime;
 using System.IO;
 using System;
-
+using System.Threading.Tasks;
+using UnityEngine.Networking;
+using System.Linq;
+using Newtonsoft.Json;
+using UnityEngine.SceneManagement;
 public class WaveformCompareBehavior : MonoBehaviour
 {
     [SerializeField]
     private TextMeshProUGUI textPhonetics;
     [SerializeField]
     private LineChart lineChart;
-    public string waveFilePath = Application.persistentDataPath + "/WaveformArecorded.wav";
+    [SerializeField]
+    private LineChart targetChart;
+    [SerializeField]
+    private TMP_InputField inputField;
+    public string waveFilePath;
+    public string targetWaveFilePath; 
+    public string concatFilePath;
     public string[] phonemes;
+    public string[] phonemeFiles;
     AudioClip audioClip;
     public int currentIndex = 0;
 
+    public void Awake()
+    {
+        waveFilePath = Application.dataPath + "/WaveformARecording.wav";
+        targetWaveFilePath = Application.dataPath + "/WaveformATarget.wav";
+        concatFilePath = Application.dataPath + "/WaveformAConcat.wav";
+    }
+
+    public async void OnAnalyzeButtonPressed()
+    {
+        string [] lArpabetPhonemes = await GetPhonemesFromDatamuseAsync(inputField.text);
+        Debug.Log("Input = " + inputField.text);
+        if (lArpabetPhonemes != null)
+        {
+            Debug.Log("Arpabet set: " + string.Join(", ", lArpabetPhonemes));
+            string [] lMappedPhonemes = MapArpabetTo44Phonemes(lArpabetPhonemes);
+            Debug.Log("Mapped Phonemes: " + string.Join(", ", lMappedPhonemes));
+            phonemeFiles = MapArpabetToFileNames(lArpabetPhonemes, Application.streamingAssetsPath + "/Phonemes/");
+            ConcatenateWavFiles(phonemeFiles, concatFilePath);
+            DrawWaveformWithXCharts(targetWaveFilePath, targetChart);
+            SetPhonemes(lMappedPhonemes);
+        }
+    }
     public void SetPhonemes(string[] phonemes)
     {
         this.phonemes = phonemes;
         currentIndex = 0;
         UpdateText();
+        UpdateTargetChart();
     }
 
     void UpdateText()
@@ -44,6 +78,7 @@ public class WaveformCompareBehavior : MonoBehaviour
                     lTempText += " - ";
                 }
             }
+            textPhonetics.text = lTempText;
         }
         else
         {
@@ -51,11 +86,47 @@ public class WaveformCompareBehavior : MonoBehaviour
         }
     }
 
-    void AttemptPhoneme()
+    void UpdateTargetChart()
     {
-        WriteAudioClipToWav(audioClip, waveFilePath);
+        Debug.Log("Updating target chart for index: " + currentIndex);
+        if (targetChart != null)
+        {
+            targetChart.ClearData();
+            if (phonemes != null && phonemes.Length > 0)
+            {
+                Debug.Log("Updating target chart with phoneme: " + phonemeFiles[currentIndex]);
+                DrawWaveformWithXCharts(phonemeFiles[currentIndex], targetChart);
+            }
+        }
+    }
+    async void AttemptPhoneme()
+    {
+        Debug.Log("Attempting phoneme: " + phonemes[currentIndex]);
+        var trimmedClip = TrimSilence(audioClip, 0.01f); // Adjust threshold as needed
+        WriteAudioClipToWav(trimmedClip, waveFilePath);
         DrawWaveformWithXCharts(waveFilePath, lineChart);
-        
+        UpdateTargetChart();
+        string attemptRes = await PracticeSceneControl.SpeechToText.decodeFile(waveFilePath);
+        string firstPhenomeOfAttempt = (await GetPhonemesFromDatamuseAsync(attemptRes))?[0];
+        string firstPhenomeOfAttemptMapped = MapArpabetTo44Phonemes(new string[] { firstPhenomeOfAttempt })[0];
+        Debug.Log("Attempted phoneme: " + attemptRes);
+        Debug.Log("First phoneme of attempt: " + firstPhenomeOfAttempt);
+        Debug.Log("Mapped first phoneme of attempt: " + firstPhenomeOfAttemptMapped);
+        if (firstPhenomeOfAttemptMapped == phonemes[currentIndex])
+        {
+            Debug.Log("Phoneme matched: " + phonemes[currentIndex]);
+            currentIndex++;
+            if (currentIndex >= phonemes.Length)
+            {
+                currentIndex = 0; // Reset to start
+            }
+            UpdateText();
+            UpdateTargetChart();
+        }
+        else
+        {
+            Debug.LogWarning("Phoneme mismatch: " + firstPhenomeOfAttemptMapped + " != " + phonemes[currentIndex]);
+        }
     }
 
     public void StartRecordAudio()
@@ -66,6 +137,7 @@ public class WaveformCompareBehavior : MonoBehaviour
             Debug.LogError("Failed to start recording audio.");
             return;
         }
+        Debug.Log("Recording started.");
     }
 
     public void StopRecordAudio()
@@ -74,27 +146,33 @@ public class WaveformCompareBehavior : MonoBehaviour
         {
             Microphone.End(null);
         }
+        Debug.Log("Recording stopped.");
         AttemptPhoneme();
     }
 
+    public void OnMainMenuButtonClicked()
+    {
+        SceneManager.LoadScene("LandingScene");
+    }
     public void DrawWaveformWithXCharts(string wavFilePath, LineChart lineChart, int resolution = 512)
     {
         // Load the wav file as an AudioClip
-        var url = "file://" + wavFilePath;
+        string phonemeFile = Path.Combine(Application.streamingAssetsPath, "Phonemes/iaay.wav");
+        string url = "file://" + phonemeFile;
         StartCoroutine(LoadAndDrawWaveform(url, lineChart, resolution));
     }
 
     private IEnumerator LoadAndDrawWaveform(string url, LineChart lineChart, int resolution)
     {
-        using (var www = UnityEngine.Networking.UnityWebRequestMultimedia.GetAudioClip(url, AudioType.WAV))
+        using (var www = UnityWebRequestMultimedia.GetAudioClip(url, AudioType.WAV))
         {
             yield return www.SendWebRequest();
-            if (www.result != UnityEngine.Networking.UnityWebRequest.Result.Success)
+            if (www.result != UnityWebRequest.Result.Success)
             {
-                Debug.LogError("Failed to load wav file: " + www.error);
+                Debug.LogError("Failed to load wav file: " +url+ ":" + www.error);
                 yield break;
             }
-            var clip = UnityEngine.Networking.DownloadHandlerAudioClip.GetContent(www);
+            var clip = DownloadHandlerAudioClip.GetContent(www);
 
             // Get audio samples
             float[] samples = new float[clip.samples * clip.channels];
@@ -163,4 +241,269 @@ public class WaveformCompareBehavior : MonoBehaviour
             }
         }
     }
+
+    public async Task<string[]> GetPhonemesFromDatamuseAsync(string word)
+    {
+        string url = $"https://api.datamuse.com/words?sp={word}&md=r";
+        using (UnityWebRequest www = UnityWebRequest.Get(url))
+        {
+            var operation = www.SendWebRequest();
+            while (!operation.isDone)
+                await Task.Yield();
+
+            if (www.result != UnityWebRequest.Result.Success)
+            {
+                Debug.LogError("Datamuse API error: " + www.error);
+                return null;
+            }
+
+            var json = www.downloadHandler.text;
+            var words = JsonConvert.DeserializeObject<List<DatamuseWord>>(json);
+            if (words != null && words.Count > 0 && words[0].tags != null)
+            {
+                foreach (var tag in words[0].tags)
+                {
+                    if (tag.StartsWith("pron:"))
+                    {
+                        var pron = tag.Substring(5);
+                        Debug.Log("Pronunciation found: " + pron);
+                        return pron.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+                    }
+                }
+            }
+        }
+        return null;
+    }
+
+    public static readonly Dictionary<string, string> ArpabetToAudioFileMap = new Dictionary<string, string>
+    {
+        // Vowels
+        { "AA", "o" },      // as in 'hot'
+        { "AE", "a" },      // as in 'cat'
+        { "AH", "u" },      // as in 'cup'
+        { "AO", "aw" },     // as in 'dog'
+        { "AW", "ow" },     // as in 'cow'
+        { "AY", "iaay" },      // as in 'my'
+        { "EH", "e" },      // as in 'bed'
+        { "ER", "ur" },     // as in 'her'
+        { "EY", "ai" },      // as in 'cake'
+        { "IH", "i" },      // as in 'sit'
+        { "IY", "ee" },     // as in 'see'
+        { "OW", "oa" },     // as in 'go'
+        { "OY", "oi" },     // as in 'boy'
+        { "UH", "oo" },     // as in 'book'
+        { "UW", "ooue" },     // as in 'blue'
+
+        // Consonants
+        { "B", "b" },       // as in 'bat'
+        { "CH", "ch" },     // as in 'chin'
+        { "D", "d" },       // as in 'dog'
+        { "DH", "the" },     // as in 'this' (voiced)
+        { "F", "f" },       // as in 'fish'
+        { "G", "g" },       // as in 'go'
+        { "HH", "h" },      // as in 'hat'
+        { "JH", "j" },      // as in 'jump'
+        { "K", "k" },       // as in 'kite'
+        { "L", "l" },       // as in 'leg'
+        { "M", "m" },       // as in 'man'
+        { "N", "n" },       // as in 'nose'
+        { "NG", "ng" },     // as in 'sing'
+        { "P", "p" },       // as in 'pig'
+        { "R", "r" },       // as in 'run'
+        { "S", "s" },       // as in 'sun'
+        { "SH", "sh" },     // as in 'she'
+        { "T", "t" },       // as in 'top'
+        { "TH", "th" },     // as in 'thin' (unvoiced)
+        { "V", "v" },       // as in 'van'
+        { "W", "w" },       // as in 'wet'
+        { "Y", "y" },       // as in 'yes'
+        { "Z", "z" },       // as in 'zip'
+        { "ZH", "zh" }      // as in 'measure'
+    };
+
+    public static readonly Dictionary<string, string> ArpabetTo44PhonemeMap = new Dictionary<string, string>
+{
+    // Vowels
+    { "AA", "o" },      // as in 'hot'
+    { "AE", "a" },      // as in 'cat'
+    { "AH", "u" },      // as in 'cup'
+    { "AO", "aw" },     // as in 'dog'
+    { "AW", "ow" },     // as in 'cow'
+    { "AY", "i" },      // as in 'my'
+    { "EH", "e" },      // as in 'bed'
+    { "ER", "ur" },     // as in 'her'
+    { "EY", "a" },      // as in 'cake'
+    { "IH", "i" },      // as in 'sit'
+    { "IY", "ee" },     // as in 'see'
+    { "OW", "oa" },     // as in 'go'
+    { "OY", "oi" },     // as in 'boy'
+    { "UH", "oo" },     // as in 'book'
+    { "UW", "oo" },     // as in 'blue'
+
+    // Consonants
+    { "B", "b" },       // as in 'bat'
+    { "CH", "ch" },     // as in 'chin'
+    { "D", "d" },       // as in 'dog'
+    { "DH", "th" },     // as in 'this' (voiced)
+    { "F", "f" },       // as in 'fish'
+    { "G", "g" },       // as in 'go'
+    { "HH", "h" },      // as in 'hat'
+    { "JH", "j" },      // as in 'jump'
+    { "K", "k" },       // as in 'kite'
+    { "L", "l" },       // as in 'leg'
+    { "M", "m" },       // as in 'man'
+    { "N", "n" },       // as in 'nose'
+    { "NG", "ng" },     // as in 'sing'
+    { "P", "p" },       // as in 'pig'
+    { "R", "r" },       // as in 'run'
+    { "S", "s" },       // as in 'sun'
+    { "SH", "sh" },     // as in 'she'
+    { "T", "t" },       // as in 'top'
+    { "TH", "th" },     // as in 'thin' (unvoiced)
+    { "V", "v" },       // as in 'van'
+    { "W", "w" },       // as in 'wet'
+    { "Y", "y" },       // as in 'yes'
+    { "Z", "z" },       // as in 'zip'
+    { "ZH", "zh" }      // as in 'measure'
+};
+
+
+    public static string[] MapArpabetTo44Phonemes(string[] arpabetPhonemes)
+    {
+        var result = new List<string>();
+        if (arpabetPhonemes == null || arpabetPhonemes.Length == 0)
+            return result.ToArray();
+        foreach (var phoneme in arpabetPhonemes)
+        {
+            if (string.IsNullOrWhiteSpace(phoneme))
+            {
+                result.Add(string.Empty);
+                continue;
+            }
+            // Remove stress digits from vowels (e.g., AH0 -> AH)
+            var basePhoneme = phoneme.TrimEnd('0', '1', '2');
+            if (ArpabetTo44PhonemeMap.TryGetValue(basePhoneme, out var mapped))
+            {
+                result.Add(mapped);
+            }
+            else
+            {
+                result.Add(basePhoneme); // fallback: use ARPABET symbol
+            }
+        }
+        return result.ToArray();
+    }
+
+    public static string[] MapArpabetToFileNames(string[] arpabetPhonemes, string audioDirectory = "Assets/PhonemeAudio/", string extension = ".wav")
+    {
+        var result = new List<string>();
+        foreach (var phoneme in arpabetPhonemes)
+        {
+            // Remove stress digits from vowels (e.g., AH0 -> AH)
+            var basePhoneme = phoneme.TrimEnd('0', '1', '2');
+            if (ArpabetToAudioFileMap.TryGetValue(basePhoneme, out var fileBase))
+            {
+                result.Add(Path.Combine(audioDirectory, fileBase + extension));
+            }
+            else
+            {
+                // Fallback: use ARPABET symbol as filename
+                result.Add(Path.Combine(audioDirectory, basePhoneme + extension));
+            }
+        }
+        return result.ToArray();
+    }
+
+    public static void ConcatenateWavFiles(string[] inputFilePaths, string outputFilePath)
+    {
+        if (inputFilePaths == null || inputFilePaths.Length == 0)
+            throw new ArgumentException("No input files provided.");
+
+        List<byte[]> pcmDataList = new List<byte[]>();
+        int sampleRate = 0, channels = 0, bitsPerSample = 0;
+
+        foreach (var filePath in inputFilePaths)
+        {
+            using (var reader = new BinaryReader(File.OpenRead(filePath)))
+            {
+                // Read WAV header
+                reader.BaseStream.Seek(22, SeekOrigin.Begin); // channels
+                channels = reader.ReadInt16();
+                sampleRate = reader.ReadInt32();
+                reader.BaseStream.Seek(34, SeekOrigin.Begin); // bits per sample
+                bitsPerSample = reader.ReadInt16();
+
+                // Find "data" chunk
+                reader.BaseStream.Seek(12, SeekOrigin.Begin);
+                while (reader.ReadUInt32() != 0x61746164) // "data"
+                {
+                    int chunkSize = reader.ReadInt32();
+                    reader.BaseStream.Seek(chunkSize, SeekOrigin.Current);
+                }
+                int dataSize = reader.ReadInt32();
+                byte[] pcmData = reader.ReadBytes(dataSize);
+                pcmDataList.Add(pcmData);
+            }
+        }
+
+        // Concatenate PCM data
+        int totalDataSize = pcmDataList.Sum(d => d.Length);
+
+        using (var writer = new BinaryWriter(File.Create(outputFilePath)))
+        {
+            // Write WAV header
+            writer.Write(System.Text.Encoding.ASCII.GetBytes("RIFF"));
+            writer.Write(36 + totalDataSize);
+            writer.Write(System.Text.Encoding.ASCII.GetBytes("WAVE"));
+            writer.Write(System.Text.Encoding.ASCII.GetBytes("fmt "));
+            writer.Write(16); // PCM
+            writer.Write((short)1); // PCM format
+            writer.Write((short)channels);
+            writer.Write(sampleRate);
+            writer.Write(sampleRate * channels * bitsPerSample / 8);
+            writer.Write((short)(channels * bitsPerSample / 8));
+            writer.Write((short)bitsPerSample);
+            writer.Write(System.Text.Encoding.ASCII.GetBytes("data"));
+            writer.Write(totalDataSize);
+
+            // Write concatenated PCM data
+            foreach (var pcm in pcmDataList)
+                writer.Write(pcm);
+        }
+    }
+
+    public static AudioClip TrimSilence(AudioClip clip, float threshold = 0.001f)
+    {
+        if (clip == null) return null;
+
+        float[] samples = new float[clip.samples * clip.channels];
+        clip.GetData(samples, 0);
+
+        int endSample = samples.Length - 1;
+        // Find last non-silent sample
+        while (endSample > 0 && Mathf.Abs(samples[endSample]) < threshold)
+            endSample--;
+
+        int trimmedSamples = endSample + 1;
+        if (trimmedSamples < 1) trimmedSamples = 1;
+
+        float[] trimmed = new float[trimmedSamples];
+        Array.Copy(samples, trimmed, trimmedSamples);
+
+        AudioClip trimmedClip = AudioClip.Create(
+            clip.name + "_trimmed",
+            trimmedSamples / clip.channels,
+            clip.channels,
+            clip.frequency,
+            false
+        );
+        trimmedClip.SetData(trimmed, 0);
+        return trimmedClip;
+    }
+}
+
+public class DatamuseWord
+{
+    public string word;
+    public List<string> tags;
 }
