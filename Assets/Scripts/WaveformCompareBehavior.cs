@@ -21,6 +21,7 @@ public class WaveformCompareBehavior : MonoBehaviour
     private TMP_InputField inputField;
     public string waveFilePath;
     public string targetWaveFilePath; 
+    public string concatFilePath;
     public string[] phonemes;
     public string[] phonemeFiles;
     AudioClip audioClip;
@@ -28,8 +29,9 @@ public class WaveformCompareBehavior : MonoBehaviour
 
     public void Awake()
     {
-        waveFilePath = Application.streamingAssetsPath + "/WaveformARecording.wav";
-        targetWaveFilePath = Application.streamingAssetsPath + "/concat.wav";
+        waveFilePath = Application.dataPath + "/WaveformARecording.wav";
+        targetWaveFilePath = Application.dataPath + "/WaveformATarget.wav";
+        concatFilePath = Application.dataPath + "/WaveformAConcat.wav";
     }
 
     public async void OnAnalyzeButtonPressed()
@@ -41,9 +43,9 @@ public class WaveformCompareBehavior : MonoBehaviour
             Debug.Log("Arpabet set: " + string.Join(", ", lArpabetPhonemes));
             string [] lMappedPhonemes = MapArpabetTo44Phonemes(lArpabetPhonemes);
             Debug.Log("Mapped Phonemes: " + string.Join(", ", lMappedPhonemes));
-            phonemeFiles = MapArpabetToFileNames(lArpabetPhonemes, "Assets/StreamingAssets/Phonemes/", ".wav");
-            ConcatenateWavFiles(phonemeFiles, targetWaveFilePath);
-            DrawWaveformWithXCharts(targetWaveFilePath, targetChart);
+            phonemeFiles = MapArpabetToFileNames(lArpabetPhonemes, Application.streamingAssetsPath + "/Phonemes/");
+            ConcatenateWavFiles(phonemeFiles, concatFilePath);
+            //DrawWaveformWithXCharts(targetWaveFilePath, targetChart);
             SetPhonemes(lMappedPhonemes);
         }
     }
@@ -52,7 +54,7 @@ public class WaveformCompareBehavior : MonoBehaviour
         this.phonemes = phonemes;
         currentIndex = 0;
         UpdateText();
-        //UpdateTargetChart();
+        UpdateTargetChart();
     }
 
     void UpdateText()
@@ -85,21 +87,45 @@ public class WaveformCompareBehavior : MonoBehaviour
 
     void UpdateTargetChart()
     {
+        Debug.Log("Updating target chart for index: " + currentIndex);
         if (targetChart != null)
         {
             targetChart.ClearData();
             if (phonemes != null && phonemes.Length > 0)
             {
-                DrawWaveformWithXCharts(phonemeFiles[currentIndex], targetChart);
+                Debug.Log("Updating target chart with phoneme: " + phonemeFiles[currentIndex]);
+                //DrawWaveformWithXCharts(phonemeFiles[currentIndex], targetChart);
             }
-            targetChart.RefreshChart();
         }
     }
-    void AttemptPhoneme()
+    async void AttemptPhoneme()
     {
-        WriteAudioClipToWav(audioClip, waveFilePath);
+        Debug.Log("Attempting phoneme: " + phonemes[currentIndex]);
+        var trimmedClip = TrimSilence(audioClip, 0.01f); // Adjust threshold as needed
+        WriteAudioClipToWav(trimmedClip, waveFilePath);
         DrawWaveformWithXCharts(waveFilePath, lineChart);
-        
+        UpdateTargetChart();
+        string attemptRes = await PracticeSceneControl.SpeechToText.decodeFile(waveFilePath);
+        string firstPhenomeOfAttempt = (await GetPhonemesFromDatamuseAsync(attemptRes))?[0];
+        string firstPhenomeOfAttemptMapped = MapArpabetTo44Phonemes(new string[] { firstPhenomeOfAttempt })[0];
+        Debug.Log("Attempted phoneme: " + attemptRes);
+        Debug.Log("First phoneme of attempt: " + firstPhenomeOfAttempt);
+        Debug.Log("Mapped first phoneme of attempt: " + firstPhenomeOfAttemptMapped);
+        if (firstPhenomeOfAttemptMapped == phonemes[currentIndex])
+        {
+            Debug.Log("Phoneme matched: " + phonemes[currentIndex]);
+            currentIndex++;
+            if (currentIndex >= phonemes.Length)
+            {
+                currentIndex = 0; // Reset to start
+            }
+            UpdateText();
+            UpdateTargetChart();
+        }
+        else
+        {
+            Debug.LogWarning("Phoneme mismatch: " + firstPhenomeOfAttemptMapped + " != " + phonemes[currentIndex]);
+        }
     }
 
     public void StartRecordAudio()
@@ -119,8 +145,8 @@ public class WaveformCompareBehavior : MonoBehaviour
         {
             Microphone.End(null);
         }
-        AttemptPhoneme();
         Debug.Log("Recording stopped.");
+        AttemptPhoneme();
     }
 
     public void DrawWaveformWithXCharts(string wavFilePath, LineChart lineChart, int resolution = 512)
@@ -340,8 +366,15 @@ public class WaveformCompareBehavior : MonoBehaviour
     public static string[] MapArpabetTo44Phonemes(string[] arpabetPhonemes)
     {
         var result = new List<string>();
+        if (arpabetPhonemes == null || arpabetPhonemes.Length == 0)
+            return result.ToArray();
         foreach (var phoneme in arpabetPhonemes)
         {
+            if (string.IsNullOrWhiteSpace(phoneme))
+            {
+                result.Add(string.Empty);
+                continue;
+            }
             // Remove stress digits from vowels (e.g., AH0 -> AH)
             var basePhoneme = phoneme.TrimEnd('0', '1', '2');
             if (ArpabetTo44PhonemeMap.TryGetValue(basePhoneme, out var mapped))
@@ -432,6 +465,35 @@ public class WaveformCompareBehavior : MonoBehaviour
             foreach (var pcm in pcmDataList)
                 writer.Write(pcm);
         }
+    }
+
+    public static AudioClip TrimSilence(AudioClip clip, float threshold = 0.001f)
+    {
+        if (clip == null) return null;
+
+        float[] samples = new float[clip.samples * clip.channels];
+        clip.GetData(samples, 0);
+
+        int endSample = samples.Length - 1;
+        // Find last non-silent sample
+        while (endSample > 0 && Mathf.Abs(samples[endSample]) < threshold)
+            endSample--;
+
+        int trimmedSamples = endSample + 1;
+        if (trimmedSamples < 1) trimmedSamples = 1;
+
+        float[] trimmed = new float[trimmedSamples];
+        Array.Copy(samples, trimmed, trimmedSamples);
+
+        AudioClip trimmedClip = AudioClip.Create(
+            clip.name + "_trimmed",
+            trimmedSamples / clip.channels,
+            clip.channels,
+            clip.frequency,
+            false
+        );
+        trimmedClip.SetData(trimmed, 0);
+        return trimmedClip;
     }
 }
 
