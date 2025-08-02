@@ -539,6 +539,7 @@ GameObject:
   - component: {fileID: 358796974}
   - component: {fileID: 358796973}
   - component: {fileID: 358796972}
+  - component: {fileID: 358796975}
   m_Layer: 5
   m_Name: Play Button
   m_TagString: Untagged
@@ -623,7 +624,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   m_Material: {fileID: 0}
-  m_Color: {r: 1, g: 0.9203187, b: 0, a: 1}
+  m_Color: {r: 1, g: 0.92156863, b: 0, a: 1}
   m_RaycastTarget: 1
   m_RaycastPadding: {x: 0, y: 0, z: 0, w: 0}
   m_Maskable: 1
@@ -648,6 +649,22 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 358796970}
   m_CullTransparentMesh: 1
+--- !u!123 &358796975
+LensFlare:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 358796970}
+  m_Enabled: 0
+  m_Flare: {fileID: 0}
+  m_Color: {r: 1, g: 1, b: 1, a: 0}
+  m_Brightness: 1
+  m_FadeSpeed: 3
+  m_IgnoreLayers:
+    serializedVersion: 2
+    m_Bits: 6
+  m_Directional: 0
 --- !u!1 &370396928
 GameObject:
   m_ObjectHideFlags: 0
