@@ -8,7 +8,7 @@ using System;
 using System.Threading.Tasks;
 using UnityEngine.Networking;
 using System.Linq;
-
+using Newtonsoft.Json; 
 public class WaveformCompareBehavior : MonoBehaviour
 {
     [SerializeField]
@@ -28,20 +28,21 @@ public class WaveformCompareBehavior : MonoBehaviour
 
     public void Awake()
     {
-        waveFilePath = Application.persistentDataPath + "Assets/Sounds/WaveformARecording.wav";
-        targetWaveFilePath = Application.persistentDataPath + "Assets/Sounds/concat.wav";
+        waveFilePath = Application.streamingAssetsPath + "/WaveformARecording.wav";
+        targetWaveFilePath = Application.streamingAssetsPath + "/concat.wav";
     }
 
     public async void OnAnalyzeButtonPressed()
     {
-        string [] lPhonemes = await GetPhonemesFromDatamuseAsync(inputField.text);
-        if (lPhonemes != null)
+        string [] lArpabetPhonemes = await GetPhonemesFromDatamuseAsync(inputField.text);
+        Debug.Log("Input = " + inputField.text);
+        if (lArpabetPhonemes != null)
         {
-            Debug.Log("Phonemes set: " + string.Join(", ", lPhonemes));
-            string [] lMappedPhonemes = MapArpabetTo44Phonemes(lPhonemes);
+            Debug.Log("Arpabet set: " + string.Join(", ", lArpabetPhonemes));
+            string [] lMappedPhonemes = MapArpabetTo44Phonemes(lArpabetPhonemes);
             Debug.Log("Mapped Phonemes: " + string.Join(", ", lMappedPhonemes));
-            phonemeFiles = MapArpabetToFileNames(lPhonemes, "Assets/Sounds/Phonemes/", ".wav");
-            //ConcatenateWavFiles(phonemeFiles, targetWaveFilePath);
+            phonemeFiles = MapArpabetToFileNames(lArpabetPhonemes, "Assets/StreamingAssets/Phonemes/", ".wav");
+            ConcatenateWavFiles(phonemeFiles, targetWaveFilePath);
             DrawWaveformWithXCharts(targetWaveFilePath, targetChart);
             SetPhonemes(lMappedPhonemes);
         }
@@ -51,7 +52,7 @@ public class WaveformCompareBehavior : MonoBehaviour
         this.phonemes = phonemes;
         currentIndex = 0;
         UpdateText();
-        UpdateTargetChart();
+        //UpdateTargetChart();
     }
 
     void UpdateText()
@@ -74,6 +75,7 @@ public class WaveformCompareBehavior : MonoBehaviour
                     lTempText += " - ";
                 }
             }
+            textPhonetics.text = lTempText;
         }
         else
         {
@@ -124,21 +126,22 @@ public class WaveformCompareBehavior : MonoBehaviour
     public void DrawWaveformWithXCharts(string wavFilePath, LineChart lineChart, int resolution = 512)
     {
         // Load the wav file as an AudioClip
-        var url = "file://" + wavFilePath;
+        string phonemeFile = Path.Combine(Application.streamingAssetsPath, "Phonemes/iaay.wav");
+        string url = "file://" + phonemeFile;
         StartCoroutine(LoadAndDrawWaveform(url, lineChart, resolution));
     }
 
     private IEnumerator LoadAndDrawWaveform(string url, LineChart lineChart, int resolution)
     {
-        using (var www = UnityEngine.Networking.UnityWebRequestMultimedia.GetAudioClip(url, AudioType.WAV))
+        using (var www = UnityWebRequestMultimedia.GetAudioClip(url, AudioType.WAV))
         {
             yield return www.SendWebRequest();
-            if (www.result != UnityEngine.Networking.UnityWebRequest.Result.Success)
+            if (www.result != UnityWebRequest.Result.Success)
             {
-                Debug.LogError("Failed to load wav file: " + www.error);
+                Debug.LogError("Failed to load wav file: " +url+ ":" + www.error);
                 yield break;
             }
-            var clip = UnityEngine.Networking.DownloadHandlerAudioClip.GetContent(www);
+            var clip = DownloadHandlerAudioClip.GetContent(www);
 
             // Get audio samples
             float[] samples = new float[clip.samples * clip.channels];
@@ -211,7 +214,6 @@ public class WaveformCompareBehavior : MonoBehaviour
     public async Task<string[]> GetPhonemesFromDatamuseAsync(string word)
     {
         string url = $"https://api.datamuse.com/words?sp={word}&md=r";
-        var tcs = new TaskCompletionSource<string>();
         using (UnityWebRequest www = UnityWebRequest.Get(url))
         {
             var operation = www.SendWebRequest();
@@ -223,29 +225,21 @@ public class WaveformCompareBehavior : MonoBehaviour
                 Debug.LogError("Datamuse API error: " + www.error);
                 return null;
             }
-            tcs.SetResult(www.downloadHandler.text);
-        }
 
-        string json = await tcs.Task;
-        string pron = null;
-        var tagIndex = json.IndexOf("\"tags\"");
-        if (tagIndex >= 0)
-        {
-            var pronIndex = json.IndexOf("pron", tagIndex);
-            if (pronIndex >= 0)
+            var json = www.downloadHandler.text;
+            var words = JsonConvert.DeserializeObject<List<DatamuseWord>>(json);
+            if (words != null && words.Count > 0 && words[0].tags != null)
             {
-                var startQuote = json.IndexOf("\"", pronIndex + 6);
-                var endQuote = json.IndexOf("\"", startQuote + 1);
-                if (startQuote >= 0 && endQuote > startQuote)
+                foreach (var tag in words[0].tags)
                 {
-                    pron = json.Substring(startQuote + 1, endQuote - startQuote - 1);
+                    if (tag.StartsWith("pron:"))
+                    {
+                        var pron = tag.Substring(5);
+                        Debug.Log("Pronunciation found: " + pron);
+                        return pron.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+                    }
                 }
             }
-        }
-
-        if (!string.IsNullOrEmpty(pron))
-        {
-            return pron.Split(' ', StringSplitOptions.RemoveEmptyEntries);
         }
         return null;
     }
@@ -258,7 +252,7 @@ public class WaveformCompareBehavior : MonoBehaviour
         { "AH", "u" },      // as in 'cup'
         { "AO", "aw" },     // as in 'dog'
         { "AW", "ow" },     // as in 'cow'
-        { "AY", "i(aay)" },      // as in 'my'
+        { "AY", "iaay" },      // as in 'my'
         { "EH", "e" },      // as in 'bed'
         { "ER", "ur" },     // as in 'her'
         { "EY", "ai" },      // as in 'cake'
@@ -267,7 +261,7 @@ public class WaveformCompareBehavior : MonoBehaviour
         { "OW", "oa" },     // as in 'go'
         { "OY", "oi" },     // as in 'boy'
         { "UH", "oo" },     // as in 'book'
-        { "UW", "oo(ue)" },     // as in 'blue'
+        { "UW", "ooue" },     // as in 'blue'
 
         // Consonants
         { "B", "b" },       // as in 'bat'
@@ -439,4 +433,10 @@ public class WaveformCompareBehavior : MonoBehaviour
                 writer.Write(pcm);
         }
     }
+}
+
+public class DatamuseWord
+{
+    public string word;
+    public List<string> tags;
 }
