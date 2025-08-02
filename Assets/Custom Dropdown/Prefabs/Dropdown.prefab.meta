@@ -1,0 +1,14 @@
+fileFormatVersion: 2
+guid: 3395720b13d19164cb319589dcf58870
+PrefabImporter:
+  externalObjects: {}
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 212824
+  packageName: Custom Dropdown
+  packageVersion: 1.1
+  assetPath: Assets/Custom Dropdown/Prefabs/Dropdown.prefab
+  uploadId: 528094
