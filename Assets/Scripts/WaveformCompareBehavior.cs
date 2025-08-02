@@ -8,7 +8,8 @@ using System;
 using System.Threading.Tasks;
 using UnityEngine.Networking;
 using System.Linq;
-using Newtonsoft.Json; 
+using Newtonsoft.Json;
+using UnityEngine.SceneManagement;
 public class WaveformCompareBehavior : MonoBehaviour
 {
     [SerializeField]
@@ -45,7 +46,7 @@ public class WaveformCompareBehavior : MonoBehaviour
             Debug.Log("Mapped Phonemes: " + string.Join(", ", lMappedPhonemes));
             phonemeFiles = MapArpabetToFileNames(lArpabetPhonemes, Application.streamingAssetsPath + "/Phonemes/");
             ConcatenateWavFiles(phonemeFiles, concatFilePath);
-            //DrawWaveformWithXCharts(targetWaveFilePath, targetChart);
+            DrawWaveformWithXCharts(targetWaveFilePath, targetChart);
             SetPhonemes(lMappedPhonemes);
         }
     }
@@ -94,7 +95,7 @@ public class WaveformCompareBehavior : MonoBehaviour
             if (phonemes != null && phonemes.Length > 0)
             {
                 Debug.Log("Updating target chart with phoneme: " + phonemeFiles[currentIndex]);
-                //DrawWaveformWithXCharts(phonemeFiles[currentIndex], targetChart);
+                DrawWaveformWithXCharts(phonemeFiles[currentIndex], targetChart);
             }
         }
     }
@@ -149,6 +150,10 @@ public class WaveformCompareBehavior : MonoBehaviour
         AttemptPhoneme();
     }
 
+    public void OnMainMenuButtonClicked()
+    {
+        SceneManager.LoadScene("LandingScene");
+    }
     public void DrawWaveformWithXCharts(string wavFilePath, LineChart lineChart, int resolution = 512)
     {
         // Load the wav file as an AudioClip
