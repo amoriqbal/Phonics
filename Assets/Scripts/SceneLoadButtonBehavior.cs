@@ -38,7 +38,13 @@ public class SceneLoadButtonBehavior : MonoBehaviour
         if(practiceScenePath != null)
             SceneManager.LoadScene(dashboardScenePath);
     }
-
+    public void QuitButton()
+    {
+               Application.Quit();
+#if UNITY_EDITOR   
+        UnityEditor.EditorApplication.isPlaying = false;
+#endif
+    }
     public void mOnNumQuestionsFieldChanged()
     {
         string xNumQuestionsStr = textFieldSettingNumQuestions.text;

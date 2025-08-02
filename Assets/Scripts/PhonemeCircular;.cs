@@ -6,6 +6,7 @@ using System.IO;
 using System.Text;
 using Newtonsoft.Json.Linq;
 using UnityEngine.Networking;
+using UnityEngine.SceneManagement;
 
 public class PhonemeRecorder : MonoBehaviour
 {
@@ -26,6 +27,10 @@ public class PhonemeRecorder : MonoBehaviour
         buttonText.text = "Start";
     }
 
+    public void MainMenuButton()
+    {
+        SceneManager.LoadScene("LandingScene");
+    }
     void OnStartStopButtonClick()
     {
         if (!isRecording)
